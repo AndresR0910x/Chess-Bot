@@ -51,7 +51,9 @@ class Chessboard {
         if (!this.selectedPiece && square.getAttribute('data-piece')) {
             this.selectPiece(square, row, col);
         } else if (this.selectedPiece) {
-            if (this.isValidMove(this.selectedPiece, this.selectedRow, this.selectedCol, row, col)) {
+            const isCapture = square.getAttribute('data-piece') !== null;
+            const isFirstMove = this.isFirstPawnMove(this.selectedPiece, this.selectedRow);
+            if (this.isValidMove(this.selectedPiece, this.selectedRow, this.selectedCol, row, col, isCapture, isFirstMove)) {
                 this.movePiece(this.selectedRow, this.selectedCol, row, col);
             } else {
                 console.log("Movimiento no válido");
@@ -96,11 +98,11 @@ class Chessboard {
         return document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
     }
 
-    isValidMove(piece, fromRow, fromCol, toRow, toCol) {
+    isValidMove(piece, fromRow, fromCol, toRow, toCol, isCapture, isFirstMove) {
         switch (piece) {
             case "&#9823;": // Peón negro
             case "&#9817;": // Peón blanco
-                return this.isValidPawnMove(piece, fromRow, fromCol, toRow, toCol);
+                return this.isValidPawnMove(piece, fromRow, fromCol, toRow, toCol, isCapture, isFirstMove);
             case "&#9820;": // Torre negra
             case "&#9814;": // Torre blanca
                 return this.isValidRookMove(fromRow, fromCol, toRow, toCol);
@@ -121,25 +123,35 @@ class Chessboard {
         }
     }
 
-    isValidPawnMove(piece, fromRow, fromCol, toRow, toCol) {
+    isValidPawnMove(piece, fromRow, fromCol, toRow, toCol, isCapture, isFirstMove) {
+        // Movimiento hacia adelante en la misma columna
         if (fromCol === toCol) {
-            if (piece === "&#9817;" && toRow === fromRow - 1) {
+            if (piece === "&#9817;") { // Peón blanco
+                if (toRow === fromRow - 1 || (isFirstMove && toRow === fromRow - 2)) {
+                    return true;
+                }
+            } else if (piece === "&#9823;") { // Peón negro
+                if (toRow === fromRow + 1 || (isFirstMove && toRow === fromRow + 2)) {
+                    return true;
+                }
+            }
+        }
+
+        // Captura en diagonal
+        if (Math.abs(fromCol - toCol) === 1 && isCapture) {
+            if (piece === "&#9817;" && toRow === fromRow - 1) { // Peón blanco
                 return true;
             }
-            if (piece === "&#9823;" && toRow === fromRow + 1) {
+            if (piece === "&#9823;" && toRow === fromRow + 1) { // Peón negro
                 return true;
             }
         }
 
-        if (Math.abs(fromCol - toCol) === 1) {
-            if (piece === "&#9817;" && toRow === fromRow - 1) {
-                return true;
-            }
-            if (piece === "&#9823;" && toRow === fromRow + 1) {
-                return true;
-            }
-        }
         return false;
+    }
+
+    isFirstPawnMove(piece, row) {
+        return (piece === "&#9817;" && row === 6) || (piece === "&#9823;" && row === 1);
     }
 
     getInitialPiece(row, col) {
